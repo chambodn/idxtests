@@ -48,13 +48,13 @@ func (r *Results) CreateIndex(mapping string) error {
 }
 
 // Create indexes a new test result into associated index.
-func (r *Results) Create(item *Test) error {
+func (r *Results) Create(item *TestDocument) error {
 	payload, err := json.Marshal(item)
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
-	res, err := esapi.CreateRequest{
+	res, err := esapi.IndexRequest{
 		Index: r.indexName,
 		Body:  bytes.NewReader(payload),
 	}.Do(ctx, r.es)

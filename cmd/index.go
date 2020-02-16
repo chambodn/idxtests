@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -26,7 +27,7 @@ var indexCmd = &cobra.Command{
 		worker := TestResultProcessor{
 			log: zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).
 				Level(func() zerolog.Level {
-					if os.Getenv("DEBUG") != "" {
+					if os.Getenv("LOG_LEVEL") == "DEBUG" {
 						return zerolog.DebugLevel
 					}
 					return zerolog.InfoLevel
@@ -111,15 +112,37 @@ func (p *TestResultProcessor) Run() {
 		p.log.Fatal().Str("path", p.path).Err(err).Msg("Cannot read files. Invalid format")
 		return
 	}
+
+	var wg sync.WaitGroup
+
 	for _, suite := range suites {
-		fmt.Println(suite.Name)
+		suitename := suite.Name
+		wg.Add(1)
+		p.log.Debug().Str("SuiteName", suitename).Msg("== TestSuite ==")
 		for _, test := range suite.Tests {
-			fmt.Printf("  %s\n", test.Name)
-			if test.Error != nil {
-				fmt.Printf("    %s: %s\n", test.Status, test.Error.Error())
-			} else {
-				fmt.Printf("    %s\n", test.Status)
+			doc := &TestDocument{
+				SuiteName:  suitename,
+				Name:       test.Name,
+				Classname:  test.Classname,
+				Duration:   test.Duration,
+				Status:     test.Status,
+				Error:      test.Error,
+				Properties: test.Properties,
+				SystemErr:  test.SystemErr,
+				SystemOut:  test.SystemOut,
+				Published:  time.Now(),
 			}
+			b, err := json.Marshal(doc)
+			if err != nil {
+				p.log.Fatal().Str("path", p.path).Str("SuiteName", suitename).Str("TestName", test.Name).Err(err).Msg("Cannot marshal document in json")
+			}
+			p.log.Debug().Str("SuiteName", suitename).Str("TestName", test.Name).Str("Body", string(b)).Msg("== TestName ==")
+
+			err = p.results.Create(doc)
+			if err != nil {
+				p.log.Fatal().Str("path", p.path).Str("SuiteName", suitename).Str("TestName", test.Name).Err(err).Msg("Cannot insert document in Elasticsearch cluster")
+			}
+
 		}
 	}
 }
@@ -130,13 +153,12 @@ func (p *TestResultProcessor) setupIndex() error {
 		  "_doc": {
 			"properties": {
 			  "id":         { "type": "keyword" },
-			  "image_url":  { "type": "keyword" },
-			  "title":      { "type": "text", "analyzer": "english" },
-			  "alt":        { "type": "text", "analyzer": "english" },
-			  "transcript": { "type": "text", "analyzer": "english" },
+			  "name":  		{ "type": "keyword" },
+			  "suitename":      { "type": "keyword" },
+			  "published":        { "type": "date" },
+			  "duration": {"type": "number"},
+			  "status": { "type": "text", "analyzer": "english" },
 			  "published":  { "type": "date" },
-			  "link":       { "type": "keyword" },
-			  "news":       { "type": "text", "analyzer": "english" }
 			}
 		  }
 		}

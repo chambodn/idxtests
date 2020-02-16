@@ -1,45 +1,31 @@
 package cmd
 
-import "time"
+import (
+	"time"
 
-// Status represents the result of a single a JUnit testcase. Indicates if a
-// testcase was run, and if it was successful.
-type Status string
-
-const (
-	// StatusPassed represents a JUnit testcase that was run, and did not
-	// result in an error or a failure.
-	StatusPassed Status = "passed"
-
-	// StatusSkipped represents a JUnit testcase that was intentionally
-	// skipped.
-	StatusSkipped Status = "skipped"
-
-	// StatusFailed represents a JUnit testcase that was run, but resulted in
-	// a failure. Failures are violations of declared test expectations,
-	// such as a failed assertion.
-	StatusFailed Status = "failed"
-
-	// StatusError represents a JUnit testcase that was run, but resulted in
-	// an error. Errors are unexpected violations of the test itself, such as
-	// an uncaught exception.
-	StatusError Status = "error"
+	"github.com/joshdk/go-junit"
 )
 
-// Test represents the results of a single test run.
-type Test struct {
+// TestDocument represents the results of a single test run.
+type TestDocument struct {
+	// SuiteName is a descriptor to the suite the current test belongs to
+	SuiteName string `json:"suitename" yaml:"name"`
+
 	// Name is a descriptor given to the test.
 	Name string `json:"name" yaml:"name"`
 
 	// Classname is an additional descriptor for the hierarchy of the test.
 	Classname string `json:"classname" yaml:"classname"`
 
+	// Published is a timestamp to determine when the test result has been stored in elasticsearch.
+	Published time.Time `json:"published" yaml:"published"`
+
 	// Duration is the total time taken to run the tests.
 	Duration time.Duration `json:"duration" yaml:"duration"`
 
 	// Status is the result of the test. Status values are passed, skipped,
 	// failure, & error.
-	Status Status `json:"status" yaml:"status"`
+	Status junit.Status `json:"status" yaml:"status"`
 
 	// Error is a record of the failure or error of a test, if applicable.
 	//
