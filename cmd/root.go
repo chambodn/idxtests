@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -10,6 +11,8 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
+
+const layoutISO = "2006-01-02"
 
 var cfgFile string
 
@@ -38,9 +41,10 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
+	currentTime := time.Now()
+	indexName := fmt.Sprintf("test-results-%s", currentTime.Format(layoutISO))
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.idxtests.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&IndexName, "index", "i", "idxtest", "elasticsearch index name")
+	rootCmd.PersistentFlags().StringVarP(&IndexName, "index", "i", indexName, "elasticsearch index name")
 	rootCmd.PersistentFlags().StringArrayVarP(&ElasticsearchUrls, "esUrls", "e", []string{"http://localhost:9200"}, "elasticsearch cluster endpoints")
 	tWidth, _, _ = terminal.GetSize(int(os.Stdout.Fd()))
 }
