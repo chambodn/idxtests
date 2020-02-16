@@ -24,14 +24,14 @@ type Results struct {
 }
 
 // NewResults returns a new instance of the test results.
-func NewResults(c ResultsConfig) (*Results, error) {
+func NewResults(c ResultsConfig) *Results {
 	indexName := c.IndexName
 	if indexName == "" {
 		indexName = "test-suites"
 	}
 
 	r := Results{es: c.Client, indexName: indexName}
-	return &r, nil
+	return &r
 }
 
 // CreateIndex creates a new index with mapping

@@ -16,6 +16,9 @@ var cfgFile string
 // IndexName is the Elasticsearch index name
 var IndexName string
 
+// ElasticsearchUrls is the Elasticsearch cluster endpoints
+var ElasticsearchUrls []string
+
 var tWidth int
 
 // rootCmd represents the base command when called without any subcommands
@@ -38,6 +41,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.idxtests.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&IndexName, "index", "i", "idxtest", "elasticsearch index name")
+	rootCmd.PersistentFlags().StringArrayVarP(&ElasticsearchUrls, "esUrls", "e", []string{"http://localhost:9200"}, "elasticsearch cluster endpoints")
 	tWidth, _, _ = terminal.GetSize(int(os.Stdout.Fd()))
 }
 
