@@ -37,14 +37,31 @@ var indexCmd = &cobra.Command{
 				Logger(),
 			path: args[0],
 		}
+		// When using the Elastic Service (https://elastic.co/cloud), you can use CloudID instead of Addresses.
+		// When either Addresses or CloudID is set, the ELASTICSEARCH_URL environment variable is ignored.
+		var cfg elasticsearch.Config
 
-		cfg := elasticsearch.Config{
-			Addresses: ElasticsearchUrls,
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost:   10,
-				ResponseHeaderTimeout: time.Second,
-			},
+		if len(os.Getenv("CLOUD_ID")) > 0 {
+			cfg = elasticsearch.Config{
+				Addresses: ElasticsearchUrls,
+				CloudID:   os.Getenv("CLOUD_ID"),
+				Username:  os.Getenv("USER"),
+				Password:  os.Getenv("PASSWORD"),
+				Transport: &http.Transport{
+					MaxIdleConnsPerHost:   10,
+					ResponseHeaderTimeout: 10 * time.Second,
+				},
+			}
+		} else {
+			cfg = elasticsearch.Config{
+				Addresses: ElasticsearchUrls,
+				Transport: &http.Transport{
+					MaxIdleConnsPerHost:   10,
+					ResponseHeaderTimeout: 10 * time.Second,
+				},
+			}
 		}
+
 		es, err := elasticsearch.NewClient(cfg)
 		if err != nil {
 			worker.log.Fatal().Err(err).Msg("Error creating Elasticsearch client")
